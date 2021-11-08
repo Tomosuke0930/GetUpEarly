@@ -1,70 +1,82 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol"; 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-// amountの変数作っても、実際にやりとりするERC20の量は増えたり減ったりはしてくれないので、ERC20のtransfer, transferFrom, approveを学ぶ必要がありそう。
 
 
-contract GetUpEarly is Ownable,ERC20 {
-
-    mapping(address => uint256) balances;
-    mapping(address => mapping (address => uint256)) allowed;
-
+contract GUPToken is ERC20,Ownable {
+    //initialSupplyに発行量を記入してtokenを発行
     constructor(uint256 initialSupply) ERC20("GetUpEarly", "GUE") {
         _mint(msg.sender, initialSupply);
-        address masterAddress;
     }
     
-    
-    struct Member {
-        string name;
-        address addr;
-        uint256 tokenAmount;
-        bool join;
-    }
-    Member[] public members;
-    
-    
-    //Participatntを作る関数　-Todoを作るの関数を参考に。
+// }
 
-    function create(string memory _name, address _addr) public {
-        Member memory member;
-        member.name = _name;
-        member.addr = msg.sender;
-        members.push(Member(_name, _addr, 1000, false));
+// contract Sample is ERC20,Ownable{
+
+//     constructor(){
+//         address masterAddress;
+//     }
+
+    mapping(address => uint256) balances;
+    mapping(address => User) public users;
+    mapping(address => mapping(address => uint256)) private _allowances;
+        
+    struct User {
+        uint256 id;
+        bytes32 name;
+        uint256 amount;
+        bool join;
+        bool set; // This boolean is used to differentiate between unset and zero struct values
+    }
+
+    function createUser(address _userAddress,uint256 _userId, bytes32 _userName, uint256 _userAmount) public {
+            User storage user = users[_userAddress];
+            require(!user.set); 
+            users[_userAddress] = User({
+                id: _userId,
+                name: _userName,
+                amount: _userAmount,
+                join: false,
+                set: true
+            });
     }
 
     //参加者の参加・不参加を決める関数
-
-    function toggleJoined(address _addr) public onlyOwner {
-        Member storage member = members[_addr];
-        member.join = !member.join;
+    function toggleJoined() public {
+        User storage user = users[msg.sender];
+        user.join = !user.join;
     }
 
     //名前を入れてもらえたら出席かどうかわかる
-    function check(uint _index) public view returns (address addr,uint balance, bool join) {
-        Member storage member = members[_index];
-        return (member.addr, member.balance, member.join);
+    function check() public view returns (bool){
+        User storage user = users[msg.sender];
+        return (user.join);
     }
 
-    //joinがTrueなmemberのbalanceからあるアドレスに対して送金する
-
- 
-    function transferFrom(address masterAddress, address _addr, uint256 tokenAmount) public override returns (bool) onlyOwner {
-            for (uint i = 0; i < members.length; i++) {
-                if ( members.join == true) {
-                    _addr = msg.sender;
-                    require(tokenAmount <= balances[masterAddress]);
-                    require(tokenAmount <= allowed[owner][msg.sender]);
-                    balances[masterAddress] = balances[masterAddress].sub(tokenAmount);
-                    allowed[masterAddress][msg.sender] = allowed[masterAddress][msg.sender].sub(tokenAmount);
-                    balances[_addr] = balances[_addr].add(tokenAmount);
-                    emit Transfer(masterAddress, _addr, tokenAmount);
-                    return true;
-            }
+    //参加する人をオーナーが確認してmasterAddressに送る
+    function transferFrom(
+        address joinUser,
+        address masterAddress,
+        uint256 amount
+    ) public onlyOwner virtual override returns (bool) {
+        User storage user = users[msg.sender];
+        require((user.join)=!false);
+        _transfer(joinUser, masterAddress, amount);
+        uint256 currentAllowance = _allowances[joinUser][_msgSender()];
+        require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
+        unchecked {
+            _approve(joinUser, _msgSender(), currentAllowance - amount);
         }
+        return true;
     }
+}
 
-
+/* 
+task
+コイン作成
+userにコインを渡す
+その上でコインをロックする
+*/
