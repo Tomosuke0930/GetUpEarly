@@ -35,6 +35,7 @@ contract GUPToken is ERC20,Ownable {
     function createUser(address _userAddress,uint256 _userId, bytes32 _userName, uint256 _userAmount) public {
             User storage user = users[_userAddress];
             require(!user.set); 
+            balances[msg.sender] = 100; //作成したユーザーに100tokenあげる
             users[_userAddress] = User({
                 id: _userId,
                 name: _userName,
@@ -64,6 +65,7 @@ contract GUPToken is ERC20,Ownable {
     ) public onlyOwner virtual override returns (bool) {
         User storage user = users[msg.sender];
         require((user.join)=!false);
+
         _transfer(joinUser, masterAddress, amount);
         uint256 currentAllowance = _allowances[joinUser][_msgSender()];
         require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
@@ -73,10 +75,3 @@ contract GUPToken is ERC20,Ownable {
         return true;
     }
 }
-
-/* 
-task
-コイン作成
-userにコインを渡す
-その上でコインをロックする
-*/
