@@ -33,6 +33,7 @@ contract UserContract{
         string name;
         bytes32 host;
         uint joinFee;
+        uint penaltyFee;
     }
 
     Project[] public projects;
@@ -87,7 +88,8 @@ contract UserContract{
         uint _startDay, 
         uint _finishDay, 
         string memory _name,
-        uint _joinFee
+        uint _joinFee,
+        uint _penaltyFee
         ) public {
         User storage user = users[msg.sender];
         Project memory pro;
@@ -96,6 +98,7 @@ contract UserContract{
         pro.name = _name;
         pro.host = user.name;
         pro.joinFee = _joinFee;
+        pro.penaltyFee = _penaltyFee;
         // projects[_name] = Project({
         //     startDay: _startDay,
         //     finishDay: _finishDay,
