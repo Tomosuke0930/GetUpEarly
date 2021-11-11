@@ -20,63 +20,90 @@ contract UserContract{
     IERC20 public gupToken;
 
     struct User {
-        uint256 id;
         bytes32 name;
         uint256 amount;
-        address lockedAddress; //①とこれによって、locked
-        bool join;
+        uint256 wokeUpTime;
+        string joinProject;
         bool set; // This boolean is used to differentiate between unset and zero struct values
     }
+
+    struct Project {
+        uint startDay;
+        uint finishDay;
+        string name;
+        bytes32 host;
+        uint joinFee;
+    }
+
+    Project[] public projects;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
-    mapping(address => uint256) lockedBalances; // ①
+    //mapping(string => Project) public projects;
     mapping(address => mapping(address => uint256)) private _allowances; 
+
 
     constructor (address _gupToken){
         gupToken = IERC20(_gupToken);
     }
 
 
-    function createUser(address _userAddress,uint256 _userId, bytes32 _userName, uint256 _userAmount) public {
-            User storage user = users[_userAddress];
+    function createUser(bytes32 _userName) public {
+            User storage user = users[msg.sender];
             require(!user.set); 
-            balances[msg.sender] += 100; //作成したユーザーに100tokenあげる
-            users[_userAddress] = User({
-                id: _userId,
+            balances[msg.sender] += 100;
+            users[msg.sender] = User({
                 name: _userName,
-                amount: _userAmount,
-                lockedAddress: msg.sender, //ここはどのようにアドレスを作成したらいいんだろうか？？
-                join: false,
+                amount: 0,
+                wokeUpTime: 0,
+                joinProject: "",
                 set: true
             });
     }
 
-    //参加するときに押してもらう関数
-    function toggleJoined() public {
-        User storage user = users[msg.sender];
-        user.join = !user.join;
+    // //参加するときに押してもらう関数
+    // function joinProjects() public {
+    //     User storage user = users[msg.sender];
+    //     require(user.join != true);
+    //     user.join = !user.join;
         
-    }
+    // }
 
-    //参加をキャンセルする際の関数
 
-    //名前を入れてもらえたら出席かどうかわかる
-    function check() public view returns (bool){
+
+    /* [WIP] この関数で行いたいこと
+    1: user.joinProjectに参加するプロジェクトのなんらかの値を持たせたい
+    2: そのプロジェクトの参加費をコントラクトアドレスに払って欲しい。
+    */
+    function joinProject(uint256 amount) external returns (bool) {
         User storage user = users[msg.sender];
-        return (user.join);
-    }
+        require(user.amount > 0, "Your amount is 0");
+        // user.joinProject = project.name; //こんな感じのことをしたい！
+        gupToken.transferFrom(msg.sender, address(this), amount); //ここのamountをprojectのjoinFeeにしたい！！！
 
-    //参加する人が自分のロックアドレスに対してお金を送る！
-    // joinがtrueであればいい！！！
-    // 今のところキャンセルはできないです！にしておく。
-    // 
-    function payJoinFee(uint256 amount) public returns (bool) {
-        User storage user = users[msg.sender];
-        require((user.join)=!false);
-        
-        //gupToken.safeTransferFrom(joinUser, user.lockedAddress, amount);
-        // ここのsafe.TransferFromの時点でtransferFromが完成している！！！  
-        gupToken.transferFrom(msg.sender, user.lockedAddress, amount);
         return true;
+    }
+
+    function createProject(
+        uint _startDay, 
+        uint _finishDay, 
+        string memory _name,
+        uint _joinFee
+        ) public {
+        User storage user = users[msg.sender];
+        Project memory pro;
+        pro.startDay = _startDay;
+        pro.finishDay = _finishDay;
+        pro.name = _name;
+        pro.host = user.name;
+        pro.joinFee = _joinFee;
+        // projects[_name] = Project({
+        //     startDay: _startDay,
+        //     finishDay: _finishDay,
+        //     host: user.name,
+        //     joinFee: _joinFee
+        // });
+
+
+        projects.push(pro);
     }
 }
