@@ -77,7 +77,7 @@ contract UserContract{
     */
     function joinProject(uint256 amount) external returns (bool) {
         User storage user = users[msg.sender];
-        require(user.amount > 0, "Your amount is 0");
+        require(user.amount > 0, "Your amount is 0");//現状が0になっているところをproject.joinFeeにしたい！！！
         // user.joinProject = project.name; //こんな感じのことをしたい！
         gupToken.transferFrom(msg.sender, address(this), amount); //ここのamountをprojectのjoinFeeにしたい！！！
 
