@@ -5,7 +5,20 @@ pragma solidity ^0.8.3;
 import "./GetUpEarly.sol";
 
 contract HelloWorld is UserContract {
+
     // 一日に一度しか押せない関数
     // その押した時間をストレージに書き込む
     // その時間をuser.wokeUpTimeとする
+    // この関数の目的：ユーザーの起きた時間がdeadline よりどうかどうか。
+    // 1
+    function TodaysHelloWorld(uint256 choicedProjectId) public {
+        User storage user = users[msg.sender];
+        Project storage project = selectedProject[choicedProjectId];
+        user.wokeUpTime = block.timestamp;
+
+        // wokeUpTime とdeadlineTimeを比べられるのかな？
+        if(user.wokeUpTime > project.deadlineTime) {
+            user.canGetUpEarly = false;
+        }
+    }
 }

@@ -23,6 +23,7 @@ contract UserContract{
         uint256 amount;
         uint256  wokeUpTime;
         string joinProject;
+        bool canGetUpEarly;
         bool set; // This boolean is used to differentiate between unset and zero struct values
     }
 
@@ -34,6 +35,7 @@ contract UserContract{
         uint joinFee;
         uint penaltyFee;
         uint256 id;
+        uint256 deadlineTime;
     }
 
     Project[] public projects;
@@ -58,6 +60,7 @@ contract UserContract{
                 amount: 0,
                 wokeUpTime: 0,
                 joinProject: "",
+                canGetUpEarly: true,
                 set: true
             });
     }
@@ -79,19 +82,23 @@ contract UserContract{
         uint _finishDay, 
         string memory _name,
         uint _joinFee,
-        uint _penaltyFee
+        uint _penaltyFee,
+        uint _deadlineTime
         ) public {
         User storage user = users[msg.sender];
         Project memory pro;
 
         pro.name = _name;
         pro.host = user.name;
+        pro.joinFee = _joinFee;
         pro.id = projects.length; // projectのidはその長さによって決まる。
         pro.startDay = _startDay;
         pro.finishDay = _finishDay;
         pro.penaltyFee = _penaltyFee;
-        pro.joinFee = _joinFee;
+        pro.deadlineTime = _deadlineTime;
 
         projects.push(pro);
     }
+
+
 }
