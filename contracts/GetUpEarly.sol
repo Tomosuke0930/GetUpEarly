@@ -19,11 +19,14 @@ contract UserContract{
     IERC20 public gupToken;
 
     struct User {
+        // uint256 id;
         bytes32 name;
         uint256 amount;
         uint256  wokeUpTime;
         string joinProject;
         bool canGetUpEarly;
+        uint256 claimingNumber; //ユーザーが他のユーザーにclaimした回数
+        uint256 claimedNumber; //他のユーザーが自分にclaimした回数
         bool set; // This boolean is used to differentiate between unset and zero struct values
     }
 
@@ -41,6 +44,7 @@ contract UserContract{
     Project[] public projects;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
+    mapping(uint256 => User) public selectedUsers;
     mapping(uint256 => Project) public selectedProject;
     //mapping(string => Project) private projects;
     mapping(address => mapping(address => uint256)) private _allowances; 
@@ -61,6 +65,8 @@ contract UserContract{
                 wokeUpTime: 0,
                 joinProject: "",
                 canGetUpEarly: true,
+                claimingNumber: 0,
+                claimedNumber: 0,
                 set: true
             });
     }
