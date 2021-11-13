@@ -31,7 +31,7 @@ contract UserContract{
         uint finishDay;
         string name;
         bytes32 host;
-        uint participationFee;
+        uint joinFee;
         uint penaltyFee;
         uint256 id;
     }
@@ -62,14 +62,14 @@ contract UserContract{
             });
     }
 
-    function participationProject(uint256 choicedProjectId) external returns (bool) {
+    function joinProject(uint256 choicedProjectId) external returns (bool) {
         User storage user = users[msg.sender];
         Project storage project = selectedProject[choicedProjectId];
         require(
-            user.amount > project.participationFee, 
-            "Your amount is less than the participation fee of this project."
+            user.amount > project.joinFee, 
+            "Your amount is less than the join fee of this project."
         );
-        gupToken.transferFrom(msg.sender, address(this), project.participationFee);
+        gupToken.transferFrom(msg.sender, address(this), project.joinFee);
 
         return true;
     }
@@ -78,7 +78,7 @@ contract UserContract{
         uint _startDay, 
         uint _finishDay, 
         string memory _name,
-        uint _participationFee,
+        uint _joinFee,
         uint _penaltyFee
         ) public {
         User storage user = users[msg.sender];
@@ -90,7 +90,7 @@ contract UserContract{
         pro.startDay = _startDay;
         pro.finishDay = _finishDay;
         pro.penaltyFee = _penaltyFee;
-        pro.participationFee = _participationFee;
+        pro.joinFee = _joinFee;
 
         projects.push(pro);
     }
