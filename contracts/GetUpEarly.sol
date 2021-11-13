@@ -123,7 +123,7 @@ contract UserContract{
               = project.joinFee
               + user.claimingNumber *canGetAmountOneClaim
               - user.claimedNumber * canGetAmountOneClaim ;
-        gupToken.transferFrom(msg.sender, address(this), canClaimAmount);
+        gupToken.transferFrom(address(this), msg.sender, canClaimAmount);
 
         user.claimedNumber = 0;
         user.claimingNumber = 0;
