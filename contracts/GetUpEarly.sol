@@ -15,14 +15,13 @@ contract GUPToken is ERC20,Ownable {
 }
 
 contract UserContract{
-    //using SafeERC20 for IERC20;
 
     IERC20 public gupToken;
 
     struct User {
         bytes32 name;
         uint256 amount;
-        uint256 wokeUpTime;
+        uint256  wokeUpTime;
         string joinProject;
         bool set; // This boolean is used to differentiate between unset and zero struct values
     }
@@ -34,12 +33,13 @@ contract UserContract{
         bytes32 host;
         uint joinFee;
         uint penaltyFee;
+        
     }
 
     Project[] public projects;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
-    //mapping(string => Project) public projects;
+    //mapping(string => Project) private projects;
     mapping(address => mapping(address => uint256)) private _allowances; 
 
 
@@ -77,8 +77,9 @@ contract UserContract{
     */
     function joinProject(uint256 amount) external returns (bool) {
         User storage user = users[msg.sender];
+        //Project storage project = projects[projectName];
         require(user.amount > 0, "Your amount is 0");//現状が0になっているところをproject.joinFeeにしたい！！！
-        // user.joinProject = project.name; //こんな感じのことをしたい！
+        //user.joinProject = project.name; //こんな感じのことをしたい！
         gupToken.transferFrom(msg.sender, address(this), amount); //ここのamountをprojectのjoinFeeにしたい！！！
 
         return true;
@@ -92,6 +93,7 @@ contract UserContract{
         uint _penaltyFee
         ) public {
         User storage user = users[msg.sender];
+        //Project storage project = projects[_name];
         Project memory pro;
         pro.startDay = _startDay;
         pro.finishDay = _finishDay;
@@ -105,7 +107,6 @@ contract UserContract{
         //     host: user.name,
         //     joinFee: _joinFee
         // });
-
 
         projects.push(pro);
     }
