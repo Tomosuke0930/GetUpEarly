@@ -25,6 +25,7 @@ contract UserContract{
         uint256  wokeUpTime;
         string joinProject;
         bool canGetUpEarly;
+        bool joined;
         uint256 claimingNumber; //ユーザーが他のユーザーにclaimした回数
         uint256 claimedNumber; //他のユーザーが自分にclaimした回数
         bool set; // This boolean is used to differentiate between unset and zero struct values
@@ -38,6 +39,7 @@ contract UserContract{
         uint joinFee;
         uint penaltyFee;
         uint256 id;
+        uint256 partipantsNumber;
         uint256 deadlineTime;
     }
 
@@ -67,19 +69,22 @@ contract UserContract{
                 canGetUpEarly: true,
                 claimingNumber: 0,
                 claimedNumber: 0,
-                set: true
+                set: true,
+                joined: false
             });
     }
 
-    function joinProject(uint256 choicedProjectId) external returns (bool) {
+    function joinProject(uint256 selectedProjectId) external returns (bool) {
         User storage user = users[msg.sender];
-        Project storage project = selectedProject[choicedProjectId];
+        Project storage project = selectedProject[selectedProjectId];
+        require (user.joined = false);
         require(
             user.amount > project.joinFee, 
             "Your amount is less than the join fee of this project."
         );
         gupToken.transferFrom(msg.sender, address(this), project.joinFee);
-
+        project.partipantsNumber ++;
+        user.joined = !user.joined;
         return true;
     }
 
@@ -106,5 +111,23 @@ contract UserContract{
         projects.push(pro);
     }
 
+    function claimForFinishProject(uint256 selectedProjectId) public {
+        User storage user = users[msg.sender];
+        Project storage project = selectedProject[selectedProjectId];
+        require(block.timestamp > project.finishDay);
+        require (keccak256(abi.encodePacked((user.joinProject))) 
+        == keccak256(abi.encodePacked((project.name))));
 
+        uint256 canGetAmountOneClaim = project.penaltyFee /project.partipantsNumber;
+        uint256 canClaimAmount
+              = project.joinFee
+              + user.claimingNumber *canGetAmountOneClaim
+              - user.claimedNumber * canGetAmountOneClaim ;
+        gupToken.transferFrom(msg.sender, address(this), canClaimAmount);
+
+        user.claimedNumber = 0;
+        user.claimingNumber = 0;
+        user.joined = !user.joined;
+        user.joinProject = "";
+    }
 }
