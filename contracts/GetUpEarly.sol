@@ -31,14 +31,15 @@ contract UserContract{
         uint finishDay;
         string name;
         bytes32 host;
-        uint joinFee;
+        uint participationFee;
         uint penaltyFee;
-        
+        uint256 id;
     }
 
     Project[] public projects;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
+    mapping(uint256 => Project) public selectedProject;
     //mapping(string => Project) private projects;
     mapping(address => mapping(address => uint256)) private _allowances; 
 
@@ -61,26 +62,14 @@ contract UserContract{
             });
     }
 
-    // //参加するときに押してもらう関数
-    // function joinProjects() public {
-    //     User storage user = users[msg.sender];
-    //     require(user.join != true);
-    //     user.join = !user.join;
-        
-    // }
-
-
-
-    /* [WIP] この関数で行いたいこと
-    1: user.joinProjectに参加するプロジェクトのなんらかの値を持たせたい
-    2: そのプロジェクトの参加費をコントラクトアドレスに払って欲しい。
-    */
-    function joinProject(uint256 amount) external returns (bool) {
+    function participationProject(uint256 choicedProjectId) external returns (bool) {
         User storage user = users[msg.sender];
-        //Project storage project = projects[projectName];
-        require(user.amount > 0, "Your amount is 0");//現状が0になっているところをproject.joinFeeにしたい！！！
-        //user.joinProject = project.name; //こんな感じのことをしたい！
-        gupToken.transferFrom(msg.sender, address(this), amount); //ここのamountをprojectのjoinFeeにしたい！！！
+        Project storage project = selectedProject[choicedProjectId];
+        require(
+            user.amount > project.participationFee, 
+            "Your amount is less than the participation fee of this project."
+        );
+        gupToken.transferFrom(msg.sender, address(this), project.participationFee);
 
         return true;
     }
@@ -89,24 +78,19 @@ contract UserContract{
         uint _startDay, 
         uint _finishDay, 
         string memory _name,
-        uint _joinFee,
+        uint _participationFee,
         uint _penaltyFee
         ) public {
         User storage user = users[msg.sender];
-        //Project storage project = projects[_name];
         Project memory pro;
-        pro.startDay = _startDay;
-        pro.finishDay = _finishDay;
+
         pro.name = _name;
         pro.host = user.name;
-        pro.joinFee = _joinFee;
+        pro.id = projects.length; // projectのidはその長さによって決まる。
+        pro.startDay = _startDay;
+        pro.finishDay = _finishDay;
         pro.penaltyFee = _penaltyFee;
-        // projects[_name] = Project({
-        //     startDay: _startDay,
-        //     finishDay: _finishDay,
-        //     host: user.name,
-        //     joinFee: _joinFee
-        // });
+        pro.participationFee = _participationFee;
 
         projects.push(pro);
     }
