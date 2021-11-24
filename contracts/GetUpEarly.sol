@@ -27,6 +27,7 @@ contract UserContract{
         bool joined;
         uint256 claimedNumber; // 他のユーザーが自分にclaimした回数
         bool set; 
+        bool canHelloWorld;
     }
 
     struct Project {
@@ -73,7 +74,8 @@ contract UserContract{
                 canGetUpEarly: true,
                 claimedNumber: 0,
                 set: true,
-                joined: false
+                joined: false,
+                canHelloWorld: false
             });
     }
 
@@ -166,6 +168,7 @@ contract UserContract{
         require(selectedUser.canGetUpEarly != dayXbool);//初日はfalseの人が対象になる。
         balances[msg.sender] += project.penaltyFee * 3/4; // 1/4は運営に入る。
         !selectedUser.canGetUpEarly;//再発防止
+        !selectedUser.canHelloWorld;
         selectedUser.claimedNumber ++;
 
     }
@@ -174,12 +177,18 @@ contract UserContract{
         User storage user = users[msg.sender];
         Project storage project = selectedProject[selectedProjectId];
         dayX = (block.timestamp - project.firstDeadlineTime)/86400;
-
+        
+        for(uint i = 0;i < dayX - 1; i++ ) {
+            !dayXbool; //初日は初期値がfalseのため起きれない人はfalseのまま
+        }
         require(block.timestamp >= dayX * 1 days + project.firstDeadlineTime - 3600);//締め切り時間の1時間前
         require(block.timestamp <= dayX * 1 days + project.firstDeadlineTime);//締め切りの時間
+        require(user.canHelloWorld = dayXbool,"You are already done TodaysHelloWorld");
 
         if(user.wokeUpTime < project.firstDeadlineTime) {
-            user.canGetUpEarly = !user.canGetUpEarly;//初日はfalse→true.
+            //ユーザーは一度しかできないようにしないといけない。
+            !user.canGetUpEarly;//初日はfalse→true.
+            !user.canHelloWorld;
         }
     }
 }
