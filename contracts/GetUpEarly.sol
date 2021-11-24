@@ -46,6 +46,7 @@ contract UserContract{
     }
 
     Project[] public projects;
+    bool dayXbool;
     uint256 dayX;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
@@ -155,14 +156,16 @@ contract UserContract{
     function checkGetUpEarly(uint256 selectedProjectId,address selectedUsersAddress) public {
         Project storage project = selectedProject[selectedProjectId];
         User storage selectedUser = users[selectedUsersAddress];//ここでclaimするユーザーを決める
-         
         dayX = (block.timestamp - project.firstDeadlineTime)/86400;
         //最初のプロジェクトの締め切り時間から何日経ったのか。小数点以下は切り捨てられるため整数になる。
+        for(uint i = 0;i < dayX - 1; i++ ) {
+            !dayXbool; //初日は初期値がfalseのため起きれない人はfalseのまま
+        }
 
         require(block.timestamp > dayX * 1 days + project.firstDeadlineTime); //時間は過ぎているのか
-        require(selectedUser.canGetUpEarly != true);//起きれていないのか？
+        require(selectedUser.canGetUpEarly != dayXbool);//初日はfalseの人が対象になる。
         balances[msg.sender] += project.penaltyFee * 3/4; // 1/4は運営に入る。
-        selectedUser.canGetUpEarly = true; //再発防止
+        !selectedUser.canGetUpEarly;//再発防止
         selectedUser.claimedNumber ++;
 
     }
@@ -176,7 +179,7 @@ contract UserContract{
         require(block.timestamp <= dayX * 1 days + project.firstDeadlineTime);//締め切りの時間
 
         if(user.wokeUpTime < project.firstDeadlineTime) {
-            user.canGetUpEarly = true;
+            user.canGetUpEarly = !user.canGetUpEarly;//初日はfalse→true.
         }
     }
 }
