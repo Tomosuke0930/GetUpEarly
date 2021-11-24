@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
+pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol"; 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
@@ -31,19 +30,18 @@ contract UserContract{
     }
 
     struct Project {
-        uint finishTime; // プロジェクトの終わる時間
-        uint startXDaysLater; // プロジェクトは何日後から始まるのか
-        uint duration; 
+        uint id;
         string name;
         bytes32 host;
         uint joinFee;
+        uint duration; 
         uint penaltyFee; // 一度、寝坊した時にかかる費用
-        uint256 id;
-        uint256 maxCanPenaltyNumber; //寝坊できる最大の数
-        uint256 joinNumber;//参加する人数
-        uint256 canJoinNumber; //参加できる人数
+        uint finishTime; // プロジェクトの終わる時間
+        uint startXDaysLater; // プロジェクトは何日後から始まるのか
         uint256 deadlineTime;// そのプロジェクトの寝坊か否かのライン
+        uint256 canJoinNumber; //参加できる人数
         uint256 firstDeadlineTime;
+        uint256 maxCanPenaltyNum; //寝坊できる最大の数
     }
 
     Project[] public projects;
@@ -89,13 +87,13 @@ contract UserContract{
             balances[msg.sender] > project.joinFee, 
             "Your amount is less than the join fee of this project."
         ); 
-        require (project.joinNumber != project.canJoinNumber,
+        require (project.canJoinNumber != project.canJoinNumber,
         "The capacity for this project has already been filled. ");
          
         gupToken.transferFrom(msg.sender, address(this), project.joinFee);
         emit Transfer(msg.sender, address(this), project.joinFee);
 
-        project.joinNumber ++; //参加人数を増やす
+        project.canJoinNumber ++; //参加人数を増やす
         user.joined = !user.joined;
         return true;
     }
@@ -110,28 +108,25 @@ contract UserContract{
         uint256 _canJoinNumber
         ) public {
         User storage user = users[msg.sender];
-        Project memory pro;
-        pro.name = _name;
-        pro.host = user.name;
-        pro.joinFee = _joinFee;
-        pro.id = projects.length; // projectのidはその長さによって決まる。
-        pro.startXDaysLater = _startXDaysLater;
-        pro.duration = _duration;
-        pro.penaltyFee = _penaltyFee;
-        pro.deadlineTime = _deadlineTime; // ここでは7:30の場合は7.5とする！！！そう記入してもらう！
-        pro.maxCanPenaltyNumber = pro.joinFee/pro.penaltyFee; 
-        pro.canJoinNumber = _canJoinNumber;
-        pro.finishTime = block.timestamp + (pro.startXDaysLater + pro.duration) * 1 days;
-        pro.firstDeadlineTime 
-        = block.timestamp/86400 + pro.startXDaysLater * 1 days + pro.deadlineTime * 1 hours;
-
-        // block.timestampを86400で割り小数点以下を切り捨てると
-        // 実行した日の00:00:00のタイムスタンプがわかる
+        projects[projects.length] = Project({
+            id: projects.length,
+            name: _name,
+            host: user.name,
+            joinFee: _joinFee,
+            duration: _duration,
+            penaltyFee: _penaltyFee,
+            finishTime: (block.timestamp/86400 + (_startXDaysLater + _duration)) * 1 days,
+            canJoinNumber: _canJoinNumber,
+            startXDaysLater: _startXDaysLater,
+            deadlineTime: _deadlineTime,
+            firstDeadlineTime: (block.timestamp/86400 + _startXDaysLater) * 1 days + _deadlineTime * 1 hours,
+            maxCanPenaltyNum: _joinFee/_penaltyFee
+         });
 
 
-        require(pro.maxCanPenaltyNumber >= 1,
-         "The joinFee is greater than the penaltyFee, please raise the joinFee or lower the penaltyFee.");
-        projects.push(pro);
+
+        // require(projects.maxCanPenaltyNumber >= 1,
+        //  "The joinFee is greater than the penaltyFee, please raise the joinFee or lower the penaltyFee.");
     }
 
     function claimForFinishProject(uint256 selectedProjectId) public returns (bool){
@@ -141,7 +136,7 @@ contract UserContract{
         require (keccak256(abi.encodePacked((user.joinProject))) 
         == keccak256(abi.encodePacked((project.name))));
         
-        uint256 canGetAmountOneClaim = project.penaltyFee /project.joinNumber;
+        uint256 canGetAmountOneClaim = project.penaltyFee /project.canJoinNumber;
         uint256 canClaimAmount
               = project.joinFee 
               - user.claimedNumber * canGetAmountOneClaim ; //(他のユーザーがこのユーザーに対してclaimした回数)*(一度claimした際にもらえる量)
