@@ -1,23 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol"; 
+import "./GUPtoken.sol";
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-// Tokenの作成
-contract GUPToken is ERC20 {
-    //initialSupplyに発行量を記入してtokenを発行
-    constructor(uint256 initialSupply) ERC20("GetUpEarly", "GUP") {
-        _mint(msg.sender, initialSupply);
-    }
-    
-}
 
-contract UserContract{    
+contract GetUp{    
     IERC20 public gupToken;
 
-    // 作成するUserの構造体
+    //Userの構造体
     struct User {
         bytes32 name;
         uint256 amount;
@@ -26,46 +19,48 @@ contract UserContract{
         bool canGetUpEarly; //ユーザーが早起きできたかどうか
         bool joined;
         uint256 claimedNumber; // 他のユーザーが自分にclaimした回数
-        bool set; 
+        bool set; //ユーザーは1アドレス1つ
         bool canHelloWorld;
     }
 
+    //Projectの構造体
     struct Project {
-        uint finishTime; // プロジェクトの終わる時間
-        uint startXDaysLater; // プロジェクトは何日後から始まるのか
-        uint duration; 
+        uint id;
         string name;
         bytes32 host;
         uint joinFee;
+        uint duration; 
         uint penaltyFee; // 一度、寝坊した時にかかる費用
-        uint256 id;
-        uint256 maxCanPenaltyNumber; //寝坊できる最大の数
-        uint256 joinNumber;//参加する人数
-        uint256 canJoinNumber; //参加できる人数
+        uint finishTime; // プロジェクトの終わる時間
+        uint startXDaysLater; // プロジェクトは何日後から始まるのか
         uint256 deadlineTime;// そのプロジェクトの寝坊か否かのライン
+        uint256 canJoinNumber; //参加できる人数
         uint256 firstDeadlineTime;
+        uint256 maxCanPenaltyNum; //寝坊できる最大の数
     }
 
     Project[] public projects;
-    bool dayXbool;
-    uint256 dayX;
+    uint256 dayX; //何日経ったのか
+    bool dayXbool; //X日目の真偽値
+    address public owner;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
     mapping(uint256 => User) public selectedUsers;
     mapping(uint256 => Project) public selectedProject;
-    mapping(address =>mapping(address => bool)) private canClaim; 
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
 
     // 異なるコントラクトで作成したtokenを使うため。
     constructor (address _gupToken){
         gupToken = IERC20(_gupToken);
+        owner = msg.sender;
     }
 
-    
+    //ユーザーを作成する関数
     function createUser(bytes32 _userName) public {
             User storage user = users[msg.sender];
             require(!user.set); //ユーザー複製禁止のため
             balances[msg.sender] += 100; 
+            console.log("I am %s",msg.sender);//これでconsole.logをnpx hardhat testで表示させたい
             users[msg.sender] = User({
                 name: _userName,
                 amount: 0,
@@ -76,9 +71,12 @@ contract UserContract{
                 set: true,
                 joined: false,
                 canHelloWorld: false
+
             });
+            
     }
 
+    // ユーザーがプロジェクトに参加するための関数
     function joinProject(uint256 selectedProjectId) external returns (bool) {
         User storage user = users[msg.sender];
         // 実際はいろんなプロジェクトがある中でクリックしたプロジェクトのidがselectedProjectIdになる！
@@ -89,17 +87,19 @@ contract UserContract{
             balances[msg.sender] > project.joinFee, 
             "Your amount is less than the join fee of this project."
         ); 
-        require (project.joinNumber != project.canJoinNumber,
+        require (project.canJoinNumber != project.canJoinNumber,
         "The capacity for this project has already been filled. ");
          
         gupToken.transferFrom(msg.sender, address(this), project.joinFee);
         emit Transfer(msg.sender, address(this), project.joinFee);
 
-        project.joinNumber ++; //参加人数を増やす
+        project.canJoinNumber ++; //参加人数を増やす
         user.joined = !user.joined;
         return true;
+
     }
 
+    // プロジェクトを作成する関数
     function createProject(
         uint _startXDaysLater, 
         uint _duration, 
@@ -110,30 +110,23 @@ contract UserContract{
         uint256 _canJoinNumber
         ) public {
         User storage user = users[msg.sender];
-        Project memory pro;
-        pro.name = _name;
-        pro.host = user.name;
-        pro.joinFee = _joinFee;
-        pro.id = projects.length; // projectのidはその長さによって決まる。
-        pro.startXDaysLater = _startXDaysLater;
-        pro.duration = _duration;
-        pro.penaltyFee = _penaltyFee;
-        pro.deadlineTime = _deadlineTime; // ここでは7:30の場合は7.5とする！！！そう記入してもらう！
-        pro.maxCanPenaltyNumber = pro.joinFee/pro.penaltyFee; 
-        pro.canJoinNumber = _canJoinNumber;
-        pro.finishTime = block.timestamp + (pro.startXDaysLater + pro.duration) * 1 days;
-        pro.firstDeadlineTime 
-        = block.timestamp/86400 + pro.startXDaysLater * 1 days + pro.deadlineTime * 1 hours;
-
-        // block.timestampを86400で割り小数点以下を切り捨てると
-        // 実行した日の00:00:00のタイムスタンプがわかる
-
-
-        require(pro.maxCanPenaltyNumber >= 1,
-         "The joinFee is greater than the penaltyFee, please raise the joinFee or lower the penaltyFee.");
-        projects.push(pro);
+        projects[projects.length] = Project({
+            id: projects.length,
+            name: _name,
+            host: user.name,
+            joinFee: _joinFee,
+            duration: _duration,
+            penaltyFee: _penaltyFee,
+            finishTime: (block.timestamp/86400 + (_startXDaysLater + _duration)) * 1 days,
+            canJoinNumber: _canJoinNumber,
+            startXDaysLater: _startXDaysLater,
+            deadlineTime: _deadlineTime,
+            firstDeadlineTime: (block.timestamp/86400 + _startXDaysLater) * 1 days + _deadlineTime * 1 hours,
+            maxCanPenaltyNum: _joinFee/_penaltyFee//小数点以下は切り捨てられる
+         });
     }
 
+    //プロジェクトが終わった際にclaimできる関数
     function claimForFinishProject(uint256 selectedProjectId) public returns (bool){
         User storage user = users[msg.sender];
         Project storage project = selectedProject[selectedProjectId];
@@ -141,7 +134,7 @@ contract UserContract{
         require (keccak256(abi.encodePacked((user.joinProject))) 
         == keccak256(abi.encodePacked((project.name))));
         
-        uint256 canGetAmountOneClaim = project.penaltyFee /project.joinNumber;
+        uint256 canGetAmountOneClaim = project.penaltyFee /project.canJoinNumber;
         uint256 canClaimAmount
               = project.joinFee 
               - user.claimedNumber * canGetAmountOneClaim ; //(他のユーザーがこのユーザーに対してclaimした回数)*(一度claimした際にもらえる量)
@@ -155,7 +148,9 @@ contract UserContract{
         return true;
     }
     
-    function checkGetUpEarly(uint256 selectedProjectId,address selectedUsersAddress) public {
+    //誰もがプロジェクトに参加している人が起きれているのかをチェックできる関数
+    //起きれていない場合はチェックしたユーザーに報酬が入る
+    function checkGetUp(uint256 selectedProjectId,address selectedUsersAddress) public {
         Project storage project = selectedProject[selectedProjectId];
         User storage selectedUser = users[selectedUsersAddress];//ここでclaimするユーザーを決める
         dayX = (block.timestamp - project.firstDeadlineTime)/86400;
@@ -168,11 +163,12 @@ contract UserContract{
         require(selectedUser.canGetUpEarly != dayXbool);//初日はfalseの人が対象になる。
         balances[msg.sender] += project.penaltyFee * 3/4; // 1/4は運営に入る。
         !selectedUser.canGetUpEarly;//再発防止
-        !selectedUser.canHelloWorld;
+        !selectedUser.canHelloWorld;//再発防止
         selectedUser.claimedNumber ++;
 
     }
 
+    //ユーザーが起きたことを証明する関数
     function TodaysHelloWorld(uint256 selectedProjectId) public {
         User storage user = users[msg.sender];
         Project storage project = selectedProject[selectedProjectId];
