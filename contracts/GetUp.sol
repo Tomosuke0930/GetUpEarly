@@ -10,7 +10,7 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 contract GetUp{    
     IERC20 public gupToken;
 
-    // 作成するUserの構造体
+    //Userの構造体
     struct User {
         bytes32 name;
         uint256 amount;
@@ -19,10 +19,11 @@ contract GetUp{
         bool canGetUpEarly; //ユーザーが早起きできたかどうか
         bool joined;
         uint256 claimedNumber; // 他のユーザーが自分にclaimした回数
-        bool set; 
+        bool set; //ユーザーは1アドレス1つ
         bool canHelloWorld;
     }
 
+    //Projectの構造体
     struct Project {
         uint id;
         string name;
@@ -39,14 +40,13 @@ contract GetUp{
     }
 
     Project[] public projects;
-    uint256 dayX;
-    bool dayXbool;
+    uint256 dayX; //何日経ったのか
+    bool dayXbool; //X日目の真偽値
     address public owner;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
     mapping(uint256 => User) public selectedUsers;
     mapping(uint256 => Project) public selectedProject;
-    mapping(address =>mapping(address => bool)) private canClaim; 
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
 
     // 異なるコントラクトで作成したtokenを使うため。
@@ -55,12 +55,12 @@ contract GetUp{
         owner = msg.sender;
     }
 
-    
+    //ユーザーを作成する関数
     function createUser(bytes32 _userName) public {
             User storage user = users[msg.sender];
             require(!user.set); //ユーザー複製禁止のため
             balances[msg.sender] += 100; 
-            console.log("I am %s",msg.sender);
+            console.log("I am %s",msg.sender);//これでconsole.logをnpx hardhat testで表示させたい
             users[msg.sender] = User({
                 name: _userName,
                 amount: 0,
@@ -76,6 +76,7 @@ contract GetUp{
             
     }
 
+    // ユーザーがプロジェクトに参加するための関数
     function joinProject(uint256 selectedProjectId) external returns (bool) {
         User storage user = users[msg.sender];
         // 実際はいろんなプロジェクトがある中でクリックしたプロジェクトのidがselectedProjectIdになる！
@@ -98,6 +99,7 @@ contract GetUp{
 
     }
 
+    // プロジェクトを作成する関数
     function createProject(
         uint _startXDaysLater, 
         uint _duration, 
@@ -120,15 +122,11 @@ contract GetUp{
             startXDaysLater: _startXDaysLater,
             deadlineTime: _deadlineTime,
             firstDeadlineTime: (block.timestamp/86400 + _startXDaysLater) * 1 days + _deadlineTime * 1 hours,
-            maxCanPenaltyNum: _joinFee/_penaltyFee
+            maxCanPenaltyNum: _joinFee/_penaltyFee//小数点以下は切り捨てられる
          });
-
-
-
-        // require(projects.maxCanPenaltyNumber >= 1,
-        //  "The joinFee is greater than the penaltyFee, please raise the joinFee or lower the penaltyFee.");
     }
 
+    //プロジェクトが終わった際にclaimできる関数
     function claimForFinishProject(uint256 selectedProjectId) public returns (bool){
         User storage user = users[msg.sender];
         Project storage project = selectedProject[selectedProjectId];
@@ -150,6 +148,8 @@ contract GetUp{
         return true;
     }
     
+    //誰もがプロジェクトに参加している人が起きれているのかをチェックできる関数
+    //起きれていない場合はチェックしたユーザーに報酬が入る
     function checkGetUp(uint256 selectedProjectId,address selectedUsersAddress) public {
         Project storage project = selectedProject[selectedProjectId];
         User storage selectedUser = users[selectedUsersAddress];//ここでclaimするユーザーを決める
@@ -163,11 +163,12 @@ contract GetUp{
         require(selectedUser.canGetUpEarly != dayXbool);//初日はfalseの人が対象になる。
         balances[msg.sender] += project.penaltyFee * 3/4; // 1/4は運営に入る。
         !selectedUser.canGetUpEarly;//再発防止
-        !selectedUser.canHelloWorld;
+        !selectedUser.canHelloWorld;//再発防止
         selectedUser.claimedNumber ++;
 
     }
 
+    //ユーザーが起きたことを証明する関数
     function TodaysHelloWorld(uint256 selectedProjectId) public {
         User storage user = users[msg.sender];
         Project storage project = selectedProject[selectedProjectId];
