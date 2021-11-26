@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.0;
+import "hardhat/console.sol";
 
 
 // This is the main building block for smart contracts.
@@ -40,6 +41,8 @@ contract Token {
         // Check if the transaction sender has enough tokens.
         // If `require`'s first argument evaluates to `false` then the
         // transaction will revert.
+        console.log("Sender balance is %s tokens", balances[msg.sender]);
+        console.log("Trying to send %s tokens to %s", amount, to);
         require(balances[msg.sender] >= amount, "Not enough tokens");
 
         // Transfer the amount.

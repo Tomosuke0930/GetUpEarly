@@ -1,19 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.0;
 
+import "./GUPtoken.sol";
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-// Tokenの作成
-contract GUPToken is ERC20 {
-    //initialSupplyに発行量を記入してtokenを発行
-    constructor(uint256 initialSupply) ERC20("GetUpEarly", "GUP") {
-        _mint(msg.sender, initialSupply);
-    }
-    
-}
 
-contract UserContract{    
+contract GetUp{    
     IERC20 public gupToken;
 
     // 作成するUserの構造体
@@ -45,8 +39,9 @@ contract UserContract{
     }
 
     Project[] public projects;
-    bool dayXbool;
     uint256 dayX;
+    bool dayXbool;
+    address public owner;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
     mapping(uint256 => User) public selectedUsers;
@@ -57,6 +52,7 @@ contract UserContract{
     // 異なるコントラクトで作成したtokenを使うため。
     constructor (address _gupToken){
         gupToken = IERC20(_gupToken);
+        owner = msg.sender;
     }
 
     
@@ -64,6 +60,7 @@ contract UserContract{
             User storage user = users[msg.sender];
             require(!user.set); //ユーザー複製禁止のため
             balances[msg.sender] += 100; 
+            console.log("I am %s",msg.sender);
             users[msg.sender] = User({
                 name: _userName,
                 amount: 0,
@@ -74,7 +71,9 @@ contract UserContract{
                 set: true,
                 joined: false,
                 canHelloWorld: false
+
             });
+            
     }
 
     function joinProject(uint256 selectedProjectId) external returns (bool) {
@@ -96,6 +95,7 @@ contract UserContract{
         project.canJoinNumber ++; //参加人数を増やす
         user.joined = !user.joined;
         return true;
+
     }
 
     function createProject(
@@ -150,7 +150,7 @@ contract UserContract{
         return true;
     }
     
-    function checkGetUpEarly(uint256 selectedProjectId,address selectedUsersAddress) public {
+    function checkGetUp(uint256 selectedProjectId,address selectedUsersAddress) public {
         Project storage project = selectedProject[selectedProjectId];
         User storage selectedUser = users[selectedUsersAddress];//ここでclaimするユーザーを決める
         dayX = (block.timestamp - project.firstDeadlineTime)/86400;
