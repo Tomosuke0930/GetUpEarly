@@ -25,9 +25,9 @@ contract UserContract{
         string joinProject;
         bool canGetUpEarly; //ユーザーが早起きできたかどうか
         bool joined;
-        uint256 claimingNumber; // ユーザーが他のユーザーにclaimした回数
         uint256 claimedNumber; // 他のユーザーが自分にclaimした回数
         bool set; 
+        bool canHelloWorld;
     }
 
     struct Project {
@@ -43,9 +43,12 @@ contract UserContract{
         uint256 joinNumber;//参加する人数
         uint256 canJoinNumber; //参加できる人数
         uint256 deadlineTime;// そのプロジェクトの寝坊か否かのライン
+        uint256 firstDeadlineTime;
     }
 
     Project[] public projects;
+    bool dayXbool;
+    uint256 dayX;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
     mapping(uint256 => User) public selectedUsers;
@@ -69,10 +72,10 @@ contract UserContract{
                 wokeUpTime: 0,
                 joinProject: "",
                 canGetUpEarly: true,
-                claimingNumber: 0,
                 claimedNumber: 0,
                 set: true,
-                joined: false
+                joined: false,
+                canHelloWorld: false
             });
     }
 
@@ -108,7 +111,6 @@ contract UserContract{
         ) public {
         User storage user = users[msg.sender];
         Project memory pro;
-
         pro.name = _name;
         pro.host = user.name;
         pro.joinFee = _joinFee;
@@ -116,12 +118,16 @@ contract UserContract{
         pro.startXDaysLater = _startXDaysLater;
         pro.duration = _duration;
         pro.penaltyFee = _penaltyFee;
-        pro.deadlineTime = _deadlineTime;
+        pro.deadlineTime = _deadlineTime; // ここでは7:30の場合は7.5とする！！！そう記入してもらう！
         pro.maxCanPenaltyNumber = pro.joinFee/pro.penaltyFee; 
         pro.canJoinNumber = _canJoinNumber;
         pro.finishTime = block.timestamp + (pro.startXDaysLater + pro.duration) * 1 days;
-        // こちらでプロジェクトの終了時間は = プロジェクトを作成した時間 
-        // + (プロジェクトは何日後から始まるか + 何日間するのか) * 1daysとした
+        pro.firstDeadlineTime 
+        = block.timestamp/86400 + pro.startXDaysLater * 1 days + pro.deadlineTime * 1 hours;
+
+        // block.timestampを86400で割り小数点以下を切り捨てると
+        // 実行した日の00:00:00のタイムスタンプがわかる
+
 
         require(pro.maxCanPenaltyNumber >= 1,
          "The joinFee is greater than the penaltyFee, please raise the joinFee or lower the penaltyFee.");
@@ -137,57 +143,52 @@ contract UserContract{
         
         uint256 canGetAmountOneClaim = project.penaltyFee /project.joinNumber;
         uint256 canClaimAmount
-              = project.joinFee
-              + user.claimingNumber *canGetAmountOneClaim//(ユーザーが他のユーザーに対してclaimした回数)*(一度claimした際にもらえる量)
+              = project.joinFee 
               - user.claimedNumber * canGetAmountOneClaim ; //(他のユーザーがこのユーザーに対してclaimした回数)*(一度claimした際にもらえる量)
         gupToken.transferFrom(address(this), msg.sender, canClaimAmount);
         emit Transfer(address(this), msg.sender, canClaimAmount);
 
         user.claimedNumber = 0;
-        user.claimingNumber = 0;
         // プロジェクトが終わるとcliamした/された回数は0になる
         user.joined = !user.joined;
         user.joinProject = "";
         return true;
     }
-
-    function dailyClaim(address selectedUsersAddress,uint256 selectedProjectId) public {
-        User storage user = users[msg.sender];
-        User storage selectedUser = users[selectedUsersAddress];//ここでclaimするユーザーを決める
+    
+    function checkGetUpEarly(uint256 selectedProjectId,address selectedUsersAddress) public {
         Project storage project = selectedProject[selectedProjectId];
-
-        require(user.canGetUpEarly != false,"You haven't woken up yet, so please do HelloWorld.");
-        require(selectedUser.canGetUpEarly != true,"The selected user is able to wake up early.");
-        require(block.timestamp > project.deadlineTime,"The deadline for the project has not yet passed.");
-        require(canClaim[msg.sender][selectedUsersAddress] != false, 
-        "You have already made a claim for this user. You can only claim the same user once."); 
-        require (keccak256(abi.encodePacked((user.joinProject))) 
-        == keccak256(abi.encodePacked((selectedUser.joinProject))),
-        "The project you are participating in does not match the project of the user you are selecting.");
-        if(selectedUser.claimedNumber < project.maxCanPenaltyNumber) {
-            user.claimingNumber ++;
-            selectedUser.claimedNumber ++;
-            canClaim[msg.sender][selectedUsersAddress] = false; //1日に1回にするため。
-        } else {
-            user.joinProject = ""; //ユーザーの参加しているプロジェクトをからにする
-            project.joinNumber --; //参加者を1減らす。
-            revert("The maximum number of penalties for this user has been exceeded and cannot be claimed");
+        User storage selectedUser = users[selectedUsersAddress];//ここでclaimするユーザーを決める
+        dayX = (block.timestamp - project.firstDeadlineTime)/86400;
+        //最初のプロジェクトの締め切り時間から何日経ったのか。小数点以下は切り捨てられるため整数になる。
+        for(uint i = 0;i < dayX - 1; i++ ) {
+            !dayXbool; //初日は初期値がfalseのため起きれない人はfalseのまま
         }
+
+        require(block.timestamp > dayX * 1 days + project.firstDeadlineTime); //時間は過ぎているのか
+        require(selectedUser.canGetUpEarly != dayXbool);//初日はfalseの人が対象になる。
+        balances[msg.sender] += project.penaltyFee * 3/4; // 1/4は運営に入る。
+        !selectedUser.canGetUpEarly;//再発防止
+        !selectedUser.canHelloWorld;
+        selectedUser.claimedNumber ++;
+
     }
 
     function TodaysHelloWorld(uint256 selectedProjectId) public {
         User storage user = users[msg.sender];
         Project storage project = selectedProject[selectedProjectId];
-        user.wokeUpTime = block.timestamp;
+        dayX = (block.timestamp - project.firstDeadlineTime)/86400;
+        
+        for(uint i = 0;i < dayX - 1; i++ ) {
+            !dayXbool; //初日は初期値がfalseのため起きれない人はfalseのまま
+        }
+        require(block.timestamp >= dayX * 1 days + project.firstDeadlineTime - 3600);//締め切り時間の1時間前
+        require(block.timestamp <= dayX * 1 days + project.firstDeadlineTime);//締め切りの時間
+        require(user.canHelloWorld = dayXbool,"You are already done TodaysHelloWorld");
 
-        //Q1. block.timestampとdeadlineTimeの比較方法は？
-        // 懸念点: block.timestamp自体の値が増え続けるなら毎日の決まった時間との比較が難しそう。。
-
-        if(user.wokeUpTime < project.deadlineTime) {
-            // userが起きた時間が参加しているプロジェクトの締め切りよりも早かったらcanGetUpEarlyはtrueになる
-            // ともすけが6:00に起きた。参加しているプロジェクトの締め切りは7:00
-            // ⇨この関数をともすけが6:15に実行したらcanGetUpEarlyはtrueになる！
-            user.canGetUpEarly = true;
+        if(user.wokeUpTime < project.firstDeadlineTime) {
+            //ユーザーは一度しかできないようにしないといけない。
+            !user.canGetUpEarly;//初日はfalse→true.
+            !user.canHelloWorld;
         }
     }
 }
