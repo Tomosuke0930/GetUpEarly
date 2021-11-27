@@ -1,13 +1,13 @@
 require("@nomiclabs/hardhat-waffle");
 require('solidity-coverage');
 
-const ALCHEMY_API_KEY = "_kK7priKshdmOWXj4PuFwSzI9DOcw996";
+const ALCHEMY_API_KEY = "";
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
- const ROPSTEN_PRIVATE_KEY = "6a391a39defe76030cce8bc806f16198644e620a355b784d07b5672791b2cfe8";
+ const ROPSTEN_PRIVATE_KEY = "";
  module.exports = {
-  solidity: "0.8.0",
+  solidity: "0.8.4",
   networks: {
     ropsten: {
       url: `https://eth-ropsten.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
