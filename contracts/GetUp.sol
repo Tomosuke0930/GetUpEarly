@@ -71,7 +71,6 @@ contract GetUp{
                 set: true,
                 joined: false,
                 canHelloWorld: false
-
             });
             
     }
