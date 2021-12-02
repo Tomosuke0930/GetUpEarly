@@ -12,7 +12,7 @@ contract GetUp{
 
     //Userの構造体
     struct User {
-        bytes32 name;
+        string name;
         uint256 amount;
         uint256  wokeUpTime; //起きた時間
         string joinProject;
@@ -27,7 +27,7 @@ contract GetUp{
     struct Project {
         uint id;
         string name;
-        bytes32 host;
+        string host;
         uint joinFee;
         uint duration; 
         uint penaltyFee; // 一度、寝坊した時にかかる費用
@@ -56,11 +56,11 @@ contract GetUp{
     }
 
     //ユーザーを作成する関数
-    function createUser(bytes32 _userName) public {
+    function createUser(string memory _userName) public {
             User storage user = users[msg.sender];
             require(!user.set); //ユーザー複製禁止のため
             balances[msg.sender] += 100; 
-            console.log("I am %s",msg.sender);//これでconsole.logをnpx hardhat testで表示させたい
+            console.log("I am %s", msg.sender);//これでconsole.logをnpx hardhat testで表示させたい
             users[msg.sender] = User({
                 name: _userName,
                 amount: 0,

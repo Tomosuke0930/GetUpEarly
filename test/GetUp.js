@@ -1,37 +1,30 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
+
 describe("GetUp", function () {
-  it("Hello World, I'm Tomosuke", async function () {
 
-    let owner;
-    let addr1;
-    let addr2;
-    let addrs;
-    let getup;
+  let token;
+  let getup;
+  let owner;
+  let addr1;
+  let addr2;
+  let addrs;
 
-    beforeEach(async function () {
-      const GetUp = await ethers.getContractFactory("GetUp");
-      [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-      getup = await GetUp.deploy();
-      await getup.deployed();
-    });
+  beforeEach(async function () {
+    GetUpToken = await ethers.getContractFactory("GetUpToken");
+    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+    token = await GetUpToken.deploy();
 
-    it("ERC20Token check", async function () {
-      expect(await getup.name()).to.equal("GetUpToken");
-      expect(await getup.symbol()).to.equal("GUT");
-    });
+    const GetUp = await ethers.getContractFactory("GetUp");
+    getup = await GetUp.connect(owner).deploy(owner.address); 
+  });
 
-    
-
-    it("Create User check", async function () {
-      const User1 = await getup.createUser(100);
-      await User1.wait();
-      try {
-        await getup.createUser(addr1);
-      } catch(error) {
-        console.log(error.message);
-      }
-    });
+  //createUserのテスト
+  it("Create User check", async function () {
+    [owner] = await ethers.getSigners();
+    testUser = await getup.createUser("Tomosuke");
+    await testUser.wait();
+    expect(testUser.name, 'error').to.equal(undefined);
   });
 });

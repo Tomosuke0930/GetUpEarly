@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-// Tokenの作成
-contract GUPToken is ERC20 {
-    //initialSupplyに発行量を記入してtokenを発行
-    constructor(uint256 initialSupply) ERC20("GetUpEarly", "GUP") {
-        _mint(msg.sender, initialSupply);
+contract GetUpToken is ERC20 {
+    constructor() ERC20("GetUpToken", "GUT") {
+        _mint(msg.sender, 10000 * 10 ** decimals());
     }
-    
 }
