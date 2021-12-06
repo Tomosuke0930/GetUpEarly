@@ -35,6 +35,10 @@ describe("GetUp", function () {
     // expect(getup.balanceOf(addr1.address).toString == 0);
     let testUser = await getup.connect(addr1).createUser("Tomosuke");
     await testUser.wait();
+
     expect(getup.balanceOf(addr1.address) > 0);
   });
+  // https://ethereum.stackexchange.com/questions/94351/revert-reason-for-arithmetic-overflows-in-solidity-v0-8
+  // https://medium.com/linum-labs/error-vm-exception-while-processing-transaction-revert-8cd856633793
 });
+
