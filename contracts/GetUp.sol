@@ -59,8 +59,11 @@ contract GetUp{
     function createUser(string memory _userName) public {
             User storage user = users[msg.sender];
             require(!user.set); //ユーザー複製禁止のため
-            balances[owner] -= 100;
-            balances[msg.sender] += 100; 
+            unchecked {
+                balances[owner] -= 100;
+                balances[msg.sender] += 100;    
+            }
+
             // console.log("I am %s", msg.sender);//これでconsole.logをnpx hardhat testで表示させたい
             users[msg.sender] = User({
                 name: _userName,
