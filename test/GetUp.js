@@ -32,13 +32,26 @@ describe("GetUp", function () {
 
   //createUserのテスト
   it("Create User check", async function () {
-    // expect(getup.balanceOf(addr1.address).toString == 0);
     let testUser = await getup.connect(addr1).createUser("Tomosuke");
     await testUser.wait();
-    expect(getup.balanceOf(addr1.address) > 0);
-    console.log(getup.balanceOf(addr1.address));
+
+    expect(await getup.balanceOf(addr1.address)).to.equal(100);
   });
-  // https://ethereum.stackexchange.com/questions/94351/revert-reason-for-arithmetic-overflows-in-solidity-v0-8
-  // https://medium.com/linum-labs/error-vm-exception-while-processing-transaction-revert-8cd856633793
+
+  it("Create Project check", async function () {
+    let testUser = await getup.connect(addr1).createUser("Tomosuke");
+    await testUser.wait();
+
+    expect(await getup.balanceOf(addr1.address)).to.equal(100);
+
+    let createProjectByTestUser 
+    = await getup.connect(addr1).createProject(1, 1, "firstProject",20,5,7,5);
+    // _startXDaysLater,_duration,_name,_joinFee,_penaltyFee,_deadlineTime,_canJoinNumbe
+    await createProjectByTestUser.wait();
+
+    // let joinProjectByTestUser = await getup.connect(addr1).joinProject(1);
+    // await joinProjectByTestUser.wait();
+    
+  });
 });
 
