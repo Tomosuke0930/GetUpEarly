@@ -25,7 +25,6 @@ contract GetUp {
     struct Project {
         uint256 id;
         string name;
-        string host;
         uint256 joinFee;
         uint256 duration;
         uint256 penaltyFee; // 一度、寝坊した時にかかる費用
@@ -114,11 +113,9 @@ contract GetUp {
         uint256 _deadlineTime,
         uint256 _canJoinNumber
     ) public {
-        User storage user = users[msg.sender];
         projects.push(Project({
             id: projects.length, 
             name: _name,
-            host: user.name,
             joinFee: _joinFee,
             duration: _duration,
             penaltyFee: _penaltyFee,
@@ -130,7 +127,6 @@ contract GetUp {
             firstDeadlineTime: (bt / 86400 + _startXDaysLater) * 1 days + _deadlineTime * 1 hours,
             maxCanPenaltyNum: _joinFee / _penaltyFee
             }));
-            console.log("User name is %s",user.name);
     }
 
     //プロジェクトが終わった際にclaimできる関数
