@@ -59,6 +59,7 @@ contract GetUp {
     function createUser(string memory _userName) public {
         User storage user = users[msg.sender];
         require(!user.set); //ユーザー複製禁止のため
+
         unchecked {
             balances[owner] -= 100;
             balances[msg.sender] += 100;
@@ -74,18 +75,6 @@ contract GetUp {
             joined: false,
             canHelloWorld: false
         });
-
-        // string name;
-        // uint256 wokeUpTime; //起きた時間
-        // string joinProject;
-        // bool canGetUpEarly; //ユーザーが早起きできたかどうか
-        // bool joined;
-        // uint256 claimedNumber; // 他のユーザーが自分にclaimした回数
-        // bool set; //ユーザーは1アドレス1つ
-        // bool canHelloWorld;
-
-        // users[msg.sender].push = (User(_userName, 0, "", true, false, 0, true, false));
-
     }
 
     // ユーザーがプロジェクトに参加するための関数
@@ -115,6 +104,7 @@ contract GetUp {
     }
 
     // プロジェクトを作成する関数
+    // ここで変数を多く使っているためstack too deepの原因と予想
     function createProject(
         uint256 _startXDaysLater,
         uint256 _duration,
