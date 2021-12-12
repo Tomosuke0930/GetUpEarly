@@ -41,7 +41,6 @@ contract GetUp {
     Project[] public projects;
     uint256 dayX; //何日経ったのか
     bool dayXbool; //X日目の真偽値
-    uint256  bt = block.timestamp; //たくさん使っていたため
     address public owner;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
@@ -74,18 +73,34 @@ contract GetUp {
             joined: false,
             canHelloWorld: false
         });
+    }
 
-        // string name;
-        // uint256 wokeUpTime; //起きた時間
-        // string joinProject;
-        // bool canGetUpEarly; //ユーザーが早起きできたかどうか
-        // bool joined;
-        // uint256 claimedNumber; // 他のユーザーが自分にclaimした回数
-        // bool set; //ユーザーは1アドレス1つ
-        // bool canHelloWorld;
-
-        // users[msg.sender].push = (User(_userName, 0, "", true, false, 0, true, false));
-
+    function createProject(
+        uint256 _startXDaysLater,
+        uint256 _duration,
+        string memory _name,
+        uint256 _joinFee,
+        uint256 _penaltyFee,
+        uint256 _deadlineTime,
+        uint256 _canJoinNumber
+    ) public {
+        User storage user = users[msg.sender];
+        projects.push(Project({
+            id: projects.length, 
+            name: _name,
+            host: user.name,
+            joinFee: _joinFee,
+            duration: _duration,
+            penaltyFee: _penaltyFee,
+            finishTime: (block.timestamp /86400 + (_startXDaysLater + _duration)) * 1 days,
+            startXDaysLater: _startXDaysLater,
+            deadlineTime: _deadlineTime,
+            joinMemberNum: 0,
+            canJoinNumber: _canJoinNumber,
+            firstDeadlineTime: (block.timestamp / 86400 + _startXDaysLater) * 1 days + _deadlineTime * 1 hours,
+            maxCanPenaltyNum: _joinFee / _penaltyFee
+            }));
+            console.log("User name is %s",user.name);
     }
 
     // ユーザーがプロジェクトに参加するための関数
@@ -114,40 +129,8 @@ contract GetUp {
         return true;
     }
 
-    // プロジェクトを作成する関数
-    function createProject(
-        uint256 _startXDaysLater,
-        uint256 _duration,
-        string memory _name,
-        uint256 _joinFee,
-        uint256 _penaltyFee,
-        uint256 _deadlineTime,
-        uint256 _canJoinNumber
-    ) public {
-        User storage user = users[msg.sender];
-        projects.push(Project({
-            id: projects.length, 
-            name: _name,
-            host: user.name,
-            joinFee: _joinFee,
-            duration: _duration,
-            penaltyFee: _penaltyFee,
-            finishTime: (bt /86400 + (_startXDaysLater + _duration)) * 1 days,
-            startXDaysLater: _startXDaysLater,
-            deadlineTime: _deadlineTime,
-            joinMemberNum: 0,
-            canJoinNumber: _canJoinNumber,
-            firstDeadlineTime: (bt / 86400 + _startXDaysLater) * 1 days + _deadlineTime * 1 hours,
-            maxCanPenaltyNum: _joinFee / _penaltyFee
-            }));
-            console.log("User name is %s",user.name);
-    }
-
     //プロジェクトが終わった際にclaimできる関数
-    function claimForFinishProject(uint256 selectedProjectId)
-        public
-        returns (bool)
-    {
+    function claimForFinishProject(uint256 selectedProjectId) public returns (bool) {
         User storage user = users[msg.sender];
         Project storage project = selectedProject[selectedProjectId];
         require(block.timestamp > project.finishTime);
