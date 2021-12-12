@@ -12,7 +12,6 @@ contract GetUp {
     //Userの構造体
     struct User {
         string name;
-        uint256 amount;
         uint256 wokeUpTime; //起きた時間
         string joinProject;
         bool canGetUpEarly; //ユーザーが早起きできたかどうか
@@ -33,14 +32,16 @@ contract GetUp {
         uint256 finishTime; // プロジェクトの終わる時間
         uint256 startXDaysLater; // プロジェクトは何日後から始まるのか
         uint256 deadlineTime; // そのプロジェクトの寝坊か否かのライン
+        uint256 joinMemberNum; //参加している人数
         uint256 canJoinNumber; //参加できる人数
         uint256 firstDeadlineTime;
         uint256 maxCanPenaltyNum; //寝坊できる最大の数
     }
-
+    
     Project[] public projects;
     uint256 dayX; //何日経ったのか
     bool dayXbool; //X日目の真偽値
+    uint256  bt = block.timestamp; //たくさん使っていたため
     address public owner;
     mapping(address => uint256) balances;
     mapping(address => User) public users;
@@ -63,10 +64,8 @@ contract GetUp {
             balances[msg.sender] += 100;
         }
 
-        // console.log("I am %s", msg.sender);//これでconsole.logをnpx hardhat testで表示させたい
         users[msg.sender] = User({
             name: _userName,
-            amount: 0,
             wokeUpTime: 0,
             joinProject: "",
             canGetUpEarly: true,
@@ -75,6 +74,18 @@ contract GetUp {
             joined: false,
             canHelloWorld: false
         });
+
+        // string name;
+        // uint256 wokeUpTime; //起きた時間
+        // string joinProject;
+        // bool canGetUpEarly; //ユーザーが早起きできたかどうか
+        // bool joined;
+        // uint256 claimedNumber; // 他のユーザーが自分にclaimした回数
+        // bool set; //ユーザーは1アドレス1つ
+        // bool canHelloWorld;
+
+        // users[msg.sender].push = (User(_userName, 0, "", true, false, 0, true, false));
+
     }
 
     // ユーザーがプロジェクトに参加するための関数
@@ -89,7 +100,7 @@ contract GetUp {
             "Your amount is less than the join fee of this project."
         );
         require(
-            project.canJoinNumber != project.canJoinNumber,
+            project.canJoinNumber > project.joinMemberNum,
             "The capacity for this project has already been filled. "
         );
 
@@ -97,7 +108,7 @@ contract GetUp {
         emit Transfer(msg.sender, address(this), project.joinFee);
 
         unchecked {
-            project.canJoinNumber++; //参加人数を増やす
+            project.joinMemberNum++; //参加人数を増やす
             user.joined = !user.joined;
         }
         return true;
@@ -113,23 +124,23 @@ contract GetUp {
         uint256 _deadlineTime,
         uint256 _canJoinNumber
     ) public {
-        // unchecked {
-            User storage user = users[msg.sender];
-            projects[projects.length] = Project({
-            id: projects.length,
+        User storage user = users[msg.sender];
+        projects.push(Project({
+            id: projects.length, 
             name: _name,
             host: user.name,
             joinFee: _joinFee,
             duration: _duration,
             penaltyFee: _penaltyFee,
-            canJoinNumber: _canJoinNumber,
+            finishTime: (bt /86400 + (_startXDaysLater + _duration)) * 1 days,
             startXDaysLater: _startXDaysLater,
             deadlineTime: _deadlineTime,
-            finishTime: (block.timestamp /86400 + (_startXDaysLater + _duration)) * 1 days,
-            firstDeadlineTime: (block.timestamp / 86400 + _startXDaysLater) * 1 days + _deadlineTime * 1 hours,
-            maxCanPenaltyNum: _joinFee / _penaltyFee //小数点以下は切り捨てられる
-        });   
-       //}
+            joinMemberNum: 0,
+            canJoinNumber: _canJoinNumber,
+            firstDeadlineTime: (bt / 86400 + _startXDaysLater) * 1 days + _deadlineTime * 1 hours,
+            maxCanPenaltyNum: _joinFee / _penaltyFee
+            }));
+            console.log("User name is %s",user.name);
     }
 
     //プロジェクトが終わった際にclaimできる関数

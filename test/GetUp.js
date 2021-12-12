@@ -38,6 +38,7 @@ describe("GetUp", function () {
     expect(await getup.balanceOf(addr1.address)).to.equal(100);
   });
 
+  // createProjectのテスト
   it("Create Project check", async function () {
     let testUser = await getup.connect(addr1).createUser("Tomosuke");
     await testUser.wait();
@@ -46,9 +47,11 @@ describe("GetUp", function () {
 
     let createProjectByTestUser 
     = await getup.connect(addr1).createProject(1, 1, "firstProject",20,5,7,5);
-    // _startXDaysLater,_duration,_name,_joinFee,_penaltyFee,_deadlineTime,_canJoinNumbe
+        // _startXDaysLater,_duration,_name,_joinFee,_penaltyFee,_deadlineTime,_canJoinNumber
+
     await createProjectByTestUser.wait();
 
+    // joinProjectのテスト
     // let joinProjectByTestUser = await getup.connect(addr1).joinProject(1);
     // await joinProjectByTestUser.wait();
     
