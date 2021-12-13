@@ -45,7 +45,6 @@ contract GetUp {
     mapping(address => uint256) balances;
     mapping(address => User) public users;
     mapping(uint256 => User) public selectedUsers;
-    mapping(uint256 => Project) public selectedProject;
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
 
     // 異なるコントラクトで作成したtokenを使うため。
@@ -77,10 +76,10 @@ contract GetUp {
     }
 
     // ユーザーがプロジェクトに参加するための関数
-    function joinProject(uint256 selectedProjectId) external returns (bool) {
+    function joinProject(uint256 _index) external returns (bool) {
         User storage user = users[msg.sender];
-        // 実際はいろんなプロジェクトがある中でクリックしたプロジェクトのidがselectedProjectIdになる！
-        Project storage project = selectedProject[selectedProjectId];
+        // 実際はいろんなプロジェクトがある中でクリックしたプロジェクトのidが_indexになる！
+        Project storage project = projects[_index];
         require(user.joined != true);
         require(
             //この書き方は違う可能性が高い。amountなんて何もなかった。
@@ -91,6 +90,8 @@ contract GetUp {
             project.canJoinNumber > project.joinMemberNum,
             "The capacity for this project has already been filled. "
         );
+
+        console.log(address(this)); //0x0165878a594ca255338adfa4d48449f69242eb8fとのこと
 
         gupToken.transferFrom(msg.sender, address(this), project.joinFee);
         emit Transfer(msg.sender, address(this), project.joinFee);
@@ -130,12 +131,12 @@ contract GetUp {
     }
 
     //プロジェクトが終わった際にclaimできる関数
-    function claimForFinishProject(uint256 selectedProjectId)
+    function claimForFinishProject(uint256 _index)
         public
         returns (bool)
     {
         User storage user = users[msg.sender];
-        Project storage project = selectedProject[selectedProjectId];
+        Project storage project = projects[_index];
         require(block.timestamp > project.finishTime);
         require(
             keccak256(abi.encodePacked((user.joinProject))) ==
@@ -159,10 +160,10 @@ contract GetUp {
 
     //誰もがプロジェクトに参加している人が起きれているのかをチェックできる関数
     //起きれていない場合はチェックしたユーザーに報酬が入る
-    function checkGetUp(uint256 selectedProjectId, address selectedUsersAddress)
+    function checkGetUp(uint256 _index, address selectedUsersAddress)
         public
     {
-        Project storage project = selectedProject[selectedProjectId];
+        Project storage project = projects[_index];
         User storage selectedUser = users[selectedUsersAddress]; //ここでclaimするユーザーを決める
         dayX = (block.timestamp - project.firstDeadlineTime) / 86400;
         //最初のプロジェクトの締め切り時間から何日経ったのか。小数点以下は切り捨てられるため整数になる。
@@ -183,9 +184,9 @@ contract GetUp {
     }
 
     //ユーザーが起きたことを証明する関数
-    function TodaysHelloWorld(uint256 selectedProjectId) public {
+    function TodaysHelloWorld(uint256 _index) public {
         User storage user = users[msg.sender];
-        Project storage project = selectedProject[selectedProjectId];
+        Project storage project = projects[_index];
         dayX = (block.timestamp - project.firstDeadlineTime) / 86400;
 
         for (uint256 i = 0; i < dayX - 1; i++) {
@@ -209,5 +210,9 @@ contract GetUp {
 
     function balanceOf(address account) external view returns (uint256) {
         return balances[account];
+    }
+    function getProjectName(uint _index) public view returns (string memory) {
+        Project storage project = projects[_index];
+        return (project.name);
     }
 }

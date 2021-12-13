@@ -51,9 +51,11 @@ describe("GetUp", function () {
 
     await createProjectByTestUser.wait();
 
+    expect(await getup.getProjectName(0)).to.equal("firstProject");
+    expect(await getup.balanceOf(addr1.address)).to.equal(100);
     // joinProjectのテスト
-    // let joinProjectByTestUser = await getup.connect(addr1).joinProject(1);
-    // await joinProjectByTestUser.wait();
+    let joinProjectByTestUser = await getup.connect(addr1).joinProject(0);
+    await joinProjectByTestUser.wait();
     
   });
 });
