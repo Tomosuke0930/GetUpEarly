@@ -7,7 +7,13 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract GetUp {
-    IERC20 public gupToken;
+    IERC20 private gupToken;
+
+    // 異なるコントラクトで作成したtokenを使うため。
+    constructor(IERC20 _gupToken) {
+        gupToken = _gupToken;
+        owner = msg.sender; 
+    }
 
     //Userの構造体
     struct User {
@@ -47,11 +53,6 @@ contract GetUp {
     mapping(uint256 => User) public selectedUsers;
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
 
-    // 異なるコントラクトで作成したtokenを使うため。
-    constructor(address _gupToken) {
-        gupToken = IERC20(_gupToken);
-        owner = msg.sender;
-    }
 
     //ユーザーを作成する関数
     function createUser(string memory _userName) public {
@@ -90,10 +91,13 @@ contract GetUp {
             project.canJoinNumber > project.joinMemberNum,
             "The capacity for this project has already been filled. "
         );
-
-        console.log(address(this)); //0x0165878a594ca255338adfa4d48449f69242eb8fとのこと
-
-        gupToken.transferFrom(msg.sender, address(this), project.joinFee);
+        console.log("Sender balance is %s tokens", balances[msg.sender]);
+        console.log("Trying to send %s tokens to %s", project.joinFee, address(this));
+        console.log("%s is contract address called by console.log(address(this))",address(this)); //0x0165878a594ca255338adfa4d48449f69242eb8fとのこと
+        
+        require(gupToken.approve(msg.sender, 20),"Failed to allow.");
+        // require(gupToken.allowance(owner, spender));
+        require(gupToken.transferFrom(msg.sender, address(this), project.joinFee),"Failed to transfer func.");
         emit Transfer(msg.sender, address(this), project.joinFee);
 
         unchecked {
@@ -184,7 +188,7 @@ contract GetUp {
     }
 
     //ユーザーが起きたことを証明する関数
-    function TodaysHelloWorld(uint256 _index) public {
+    function todaysHelloWorld(uint256 _index) public {
         User storage user = users[msg.sender];
         Project storage project = projects[_index];
         dayX = (block.timestamp - project.firstDeadlineTime) / 86400;

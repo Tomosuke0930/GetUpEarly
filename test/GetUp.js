@@ -19,8 +19,10 @@ describe("GetUp", function () {
     expect(token.deployed(), "contract was not deployed");
 
     const GetUp = await ethers.getContractFactory("GetUp");
-    getup = await GetUp.connect(owner).deploy(owner.address); 
+    getup = await GetUp.connect(owner).deploy(token.address);  
     expect(getup.deployed(), "contract was not deployed");
+
+
   });
 
   // GetUpコントラクトに送金テスト
@@ -56,7 +58,6 @@ describe("GetUp", function () {
     // joinProjectのテスト
     let joinProjectByTestUser = await getup.connect(addr1).joinProject(0);
     await joinProjectByTestUser.wait();
-    
   });
 });
 
