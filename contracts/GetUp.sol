@@ -1,17 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./GUPtoken.sol";
+// import "./token.sol";
 import "hardhat/console.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+interface IERC20 {
+    function totalSupply() external view returns (uint);
+
+    function balanceOf(address account) external view returns (uint);
+
+    function transfer(address recipient, uint amount) external returns (bool);
+
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint amount) external returns (bool);
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint amount
+    ) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
+}
 
 contract GetUp {
-    IERC20 private gupToken;
+    IERC20 public token;
+    address public owner;
 
     // 異なるコントラクトで作成したtokenを使うため。
-    constructor(IERC20 _gupToken) {
-        gupToken = _gupToken;
+    constructor(IERC20 _token) {
+        token = _token;
         owner = msg.sender; 
     }
 
@@ -25,7 +47,11 @@ contract GetUp {
         uint256 claimedNumber; // 他のユーザーが自分にclaimした回数
         bool set; //ユーザーは1アドレス1つ
         bool canHelloWorld;
+        bool firstClaim; //初めてのclaim的な！
     }
+
+
+    
 
     //Projectの構造体
     struct Project {
@@ -47,8 +73,7 @@ contract GetUp {
     uint256 dayX; //何日経ったのか
     bool dayXbool; //X日目の真偽値
     uint256  bt = block.timestamp; //たくさん使っていたため
-    address public owner;
-    mapping(address => uint256) balances;
+    //mapping(address => uint256) balances;
     mapping(address => User) public users;
     mapping(uint256 => User) public selectedUsers;
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
@@ -58,11 +83,14 @@ contract GetUp {
     function createUser(string memory _userName) public {
         User storage user = users[msg.sender];
         require(!user.set); //ユーザー複製禁止のため
-
-        unchecked {
-            balances[owner] -= 100;
-            balances[msg.sender] += 100;
-        }
+        //token.transfer(msg.sender, 100);
+        console.log(token.balanceOf(owner));
+        require(token.approve(owner, 100), "Failed to allow.");
+        require(token.transferFrom(owner, msg.sender, 100));
+        // unchecked {
+        // require(token.approve(owner, 100),"Failed to allow.");
+        // require(token.transferFrom(owner,msg.sender,100),"Failed to allow.");
+        // }
 
         users[msg.sender] = User({
             name: _userName,
@@ -72,9 +100,17 @@ contract GetUp {
             claimedNumber: 0,
             set: true,
             joined: false,
-            canHelloWorld: false
+            canHelloWorld: false,
+            firstClaim:false
         });
     }
+
+    // function firstClaim() public {
+    //     User storage user = users[msg.sender];
+    //     require(user.firstClaim != false);
+
+        
+    // }
 
     // ユーザーがプロジェクトに参加するための関数
     function joinProject(uint256 _index) external returns (bool) {
@@ -84,20 +120,21 @@ contract GetUp {
         require(user.joined != true);
         require(
             //この書き方は違う可能性が高い。amountなんて何もなかった。
-            balances[msg.sender] > project.joinFee,
+            token.balanceOf(msg.sender) > project.joinFee,
             "Your amount is less than the join fee of this project."
         );
         require(
             project.canJoinNumber > project.joinMemberNum,
             "The capacity for this project has already been filled. "
         );
-        console.log("Sender balance is %s tokens", balances[msg.sender]);
+
+        console.log("Sender balance is %s tokens", token.balanceOf(msg.sender));
         console.log("Trying to send %s tokens to %s", project.joinFee, address(this));
         console.log("%s is contract address called by console.log(address(this))",address(this)); //0x0165878a594ca255338adfa4d48449f69242eb8fとのこと
         
-        require(gupToken.approve(msg.sender, 20),"Failed to allow.");
-        // require(gupToken.allowance(owner, spender));
-        require(gupToken.transferFrom(msg.sender, address(this), project.joinFee),"Failed to transfer func.");
+        // require(token.approve(msg.sender, project.joinFee),"Failed to allow.");
+        // require(token.allowance(owner, spender));
+        require(token.transfer(address(this), project.joinFee),"Failed to transfer func.");
         emit Transfer(msg.sender, address(this), project.joinFee);
 
         unchecked {
@@ -152,7 +189,7 @@ contract GetUp {
         uint256 canClaimAmount = project.joinFee -
             user.claimedNumber *
             canGetAmountOneClaim; //(他のユーザーがこのユーザーに対してclaimした回数)*(一度claimした際にもらえる量)
-        gupToken.transferFrom(address(this), msg.sender, canClaimAmount);
+        token.transferFrom(address(this), msg.sender, canClaimAmount);
         emit Transfer(address(this), msg.sender, canClaimAmount);
 
         user.claimedNumber = 0;
@@ -179,7 +216,9 @@ contract GetUp {
         require(selectedUser.canGetUpEarly != dayXbool); //初日はfalseの人が対象になる。
 
         unchecked {
-            balances[msg.sender] += (project.penaltyFee * 3) / 4; // 1/4は運営に入る。
+            //token.balanceOf(msg.sender) += (project.penaltyFee * 3) / 4; // 1/4は運営に入る。
+            require(token.approve(address(this), 100),"Failed to allow.");
+            require(token.transferFrom(address(this),msg.sender,(project.penaltyFee * 3) / 4),"Failed to allow.");
             selectedUser.claimedNumber++;  
         }
         !selectedUser.canGetUpEarly; //再発防止
@@ -212,11 +251,9 @@ contract GetUp {
         }
     }
 
-    function balanceOf(address account) external view returns (uint256) {
-        return balances[account];
-    }
     function getProjectName(uint _index) public view returns (string memory) {
         Project storage project = projects[_index];
         return (project.name);
     }
+
 }
